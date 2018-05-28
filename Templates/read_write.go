@@ -33,7 +33,7 @@ func input(filename, message string) {
 	file.WriteString(message)
 }
 
-func ouput(filename string) string {
+func ouput(filename string) (message string) {
 	file, err := os.OpenFile(
 		filename,
 		os.O_RDONLY,
@@ -41,10 +41,9 @@ func ouput(filename string) string {
 	)
 	if err != nil {
 		fmt.Println(err)
-		return ""
+		return
 	}
 	defer file.Close()
-	var message string
 	buffer := make([]byte, 64)
 	for {
 		m, err := file.Read(buffer)
