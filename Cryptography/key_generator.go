@@ -20,7 +20,6 @@ func main () {
         get_error("mode is not found")
     }
 
-    fmt.Scanln()
     os.Exit(0)
 }
 
