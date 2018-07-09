@@ -19,17 +19,21 @@ func main () {
     } else {
         get_error("mode is not found")
     }
-
+    
     os.Exit(0)
 }
 
 func create_key () {
+
+    var (
+        file_name string
+        max_num int32
+    )
+
     fmt.Print("File name: ")
-    var file_name string
     fmt.Scanf("%s", &file_name)
 
     fmt.Print("Max number: ")
-    var max_num int32
     fmt.Scanf("%d", &max_num)
 
     if (max_num < 0) {
@@ -40,16 +44,16 @@ func create_key () {
 }
 
 func read_key () {
-    fmt.Print("File name: ")
-    var file_name string
-    fmt.Scanf("%s", &file_name)
-
-    var length int32 = get_length(file_name)
-
     var (
+        file_name string
         position int32
         quantity int32
     )
+
+    fmt.Print("File name: ")
+    fmt.Scanf("%s", &file_name)
+
+    var length int32 = get_length(file_name)
 
     fmt.Println("Length of file:", length)
         
