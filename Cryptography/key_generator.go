@@ -24,7 +24,6 @@ func main () {
 }
 
 func create_key () {
-
     var (
         file_name string
         max_num int32
