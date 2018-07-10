@@ -4,11 +4,11 @@ package main
   * [Example]:
   *     $ go build main.go 
   *     [Generate]:
-  *         $ ./main g key.txt 1000
+  *         $ ./main -g key.txt 1000
   *     [Read_Key]:
-  *         $ ./main r key.txt 50 100
+  *         $ ./main -r key.txt 50 100
   *     [Get_Length]:
-  *         $ ./main l key.txt 
+  *         $ ./main -l key.txt 
   */
 
 import (
@@ -19,13 +19,17 @@ import (
     "crypto/rand"
 )
 
+var modeG [2]string = [2]string{"-G", "--GENERATE"}
+var modeR [2]string = [2]string{"-R", "--READ"}
+var modeL [2]string = [2]string{"-L", "--LENGTH"}
+
 func main () {
 
-    if len(os.Args) < 2 {
-        get_error("args < 2")
-    }
+    if len(os.Args) < 2 { get_error("args < 2") }
 
-    if (strings.ToUpper(os.Args[1]) == "G") {
+    if 
+    strings.ToUpper(os.Args[1]) == modeG[0] ||
+    strings.ToUpper(os.Args[1]) == modeG[1] {
 
         check_args("G", os.Args)
 
@@ -34,7 +38,9 @@ func main () {
 
         create_key(os.Args[2], int32(max))
 
-    } else if (strings.ToUpper(os.Args[1]) == "R") {
+    } else if 
+    strings.ToUpper(os.Args[1]) == modeR[0] ||
+    strings.ToUpper(os.Args[1]) == modeR[1] {
 
         check_args("R", os.Args)
 
@@ -46,7 +52,9 @@ func main () {
 
         read_key(os.Args[2], int32(pos), int32(quan), get_length(os.Args[2]))
 
-    } else if (strings.ToUpper(os.Args[1]) == "L"){
+    } else if 
+    strings.ToUpper(os.Args[1]) == modeL[0] ||
+    strings.ToUpper(os.Args[1]) == modeL[1] {
 
         check_args("L", os.Args)
         fmt.Println("Length of file:", get_length(os.Args[2]))
@@ -59,15 +67,15 @@ func main () {
 }
 
 func check_args (mode string, args []string) {
-    if mode == "G" {
+    if mode == modeG[0] || mode == modeG[1] {
         if len(args) != 4 {
             get_error("mode = c, args != 4")
         }
-    } else if mode == "R" {
+    } else if mode == modeR[0] || mode == modeR[1] {
         if len(args) != 5 {
             get_error("mode = r, args != 5")
         }
-    } else if mode == "L" {
+    } else if mode == modeL[0] || mode == modeL[1] {
         if len(args) != 3 {
             get_error("mode = l, args != 3")
         }
