@@ -1,21 +1,56 @@
 package main
 
+ /*
+  * [Example]:
+  *     $ go build main.go 
+  *     [Generate]:
+  *         $ ./main g key.txt 1000
+  *     [Read_Key]:
+  *         $ ./main r key.txt 50 100
+  *     [Get_Length]:
+  *         $ ./main l key.txt 
+  */
+
 import (
     "fmt"
     "os"
     "strings"
+    "strconv"
     "crypto/rand"
 )
 
 func main () {
-    fmt.Print("[C]reate|[R]ead: ")
-    var choice string
-    fmt.Scanf("%s", &choice)
 
-    if (strings.ToUpper(choice) == "C") {
-        create_key()
-    } else if (strings.ToUpper(choice) == "R") {
-        read_key()
+    if len(os.Args) < 2 {
+        get_error("args < 2")
+    }
+
+    if (strings.ToUpper(os.Args[1]) == "G") {
+
+        check_args("G", os.Args)
+
+        max, err := strconv.Atoi(os.Args[3])
+        check_error(err)
+
+        create_key(os.Args[2], int32(max))
+
+    } else if (strings.ToUpper(os.Args[1]) == "R") {
+
+        check_args("R", os.Args)
+
+        pos, err := strconv.Atoi(os.Args[3])
+        check_error(err)
+
+        quan, err := strconv.Atoi(os.Args[4])
+        check_error(err)
+
+        read_key(os.Args[2], int32(pos), int32(quan), get_length(os.Args[2]))
+
+    } else if (strings.ToUpper(os.Args[1]) == "L"){
+
+        check_args("L", os.Args)
+        fmt.Println("Length of file:", get_length(os.Args[2]))
+
     } else {
         get_error("mode is not found")
     }
@@ -23,45 +58,30 @@ func main () {
     os.Exit(0)
 }
 
-func create_key () {
-    var (
-        file_name string
-        max_num int32
-    )
+func check_args (mode string, args []string) {
+    if mode == "G" {
+        if len(args) != 4 {
+            get_error("mode = c, args != 4")
+        }
+    } else if mode == "R" {
+        if len(args) != 5 {
+            get_error("mode = r, args != 5")
+        }
+    } else if mode == "L" {
+        if len(args) != 3 {
+            get_error("mode = l, args != 3")
+        }
+    }
+}
 
-    fmt.Print("File name: ")
-    fmt.Scanf("%s", &file_name)
-
-    fmt.Print("Max number: ")
-    fmt.Scanf("%d", &max_num)
-
+func create_key (file_name string, max_num int32) {
     if (max_num < 0) {
         get_error("Max number < 0")
     }
-
     save_key(file_name, generate_key(max_num))
 }
 
-func read_key () {
-    var (
-        file_name string
-        position int32
-        quantity int32
-    )
-
-    fmt.Print("File name: ")
-    fmt.Scanf("%s", &file_name)
-
-    var length int32 = get_length(file_name)
-
-    fmt.Println("Length of file:", length)
-        
-    fmt.Print("Position: ")
-    fmt.Scanf("%d", &position)
-
-    fmt.Print("Quantity: ")
-    fmt.Scanf("%d", &quantity)
-
+func read_key (file_name string, position, quantity int32, length int32) {
     if (length < position + quantity) {
         get_error("length of file < pos + quan")
     } else {
