@@ -9,7 +9,12 @@ import (
 const BUFF = 512
 
 func main() {
+    var html string = urlopen("https://google.com")
+    fmt.Println(html)
+    os.Exit(0)
+}
 
+func urlopen(url string) string {
     var (
         resp *http.Response
         html_page string
@@ -17,8 +22,7 @@ func main() {
         length int
         err error
     )
-
-    resp, err = http.Get("https://google.com") 
+    resp, err = http.Get(url) 
     check_error(err)
     defer resp.Body.Close()
 
@@ -28,8 +32,7 @@ func main() {
         html_page += string(buffer[:length])
         if length == 0 || err != nil{ break }
     }
-    fmt.Println(html_page)
-    os.Exit(0)
+    return html_page
 }
 
 func check_error (err error) {
