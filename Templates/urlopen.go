@@ -9,9 +9,7 @@ import (
 const BUFF = 512
 
 func main() {
-    var html string = urlopen("https://google.com")
-    fmt.Println(html)
-    os.Exit(0)
+    fmt.Println(urlopen("https://google.com"))
 }
 
 func urlopen(url string) string {
