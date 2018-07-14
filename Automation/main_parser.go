@@ -96,9 +96,9 @@ func get_info() {
     -tp || --tor-proxy  -> Turn on tor proxy
     -ua || --user-agent -> Turn on user-agent
     -t  || --tag        -> Tag name
-    -a  || --atr        -> Attribute name
+    -a  || --attr       -> Attribute name
 Example:
-    $ parse google.com --tag a --atr href -tp -ua`)
+    $ parse google.com --tag a --attr href -tp -ua`)
     os.Exit(0)
 }
 
@@ -169,16 +169,16 @@ func get_object (html string) []string {
         if ATR_NAME != "" {
             regular = regexp.MustCompile(`<`+TAG_NAME+`.*?`+ATR_NAME+`\s*=\s*['"]([^\s'"]+)[\s'"]`)
             result = regular.FindAllStringSubmatch(html, -1)
-            for _, link := range result {
-                slice_result = append(slice_result, link[1])
+            for _, slice := range result {
+                slice_result = append(slice_result, slice[1])
             }
             TAG_NAME = ""; ATR_NAME = ""
 
         } else {
             regular = regexp.MustCompile(`<`+TAG_NAME+`[^>]*>.+</`+TAG_NAME+`>`)
             result = regular.FindAllStringSubmatch(html, -1)
-            for _, link := range result {
-                slice_result = append(slice_result, link[0])
+            for _, slice := range result {
+                slice_result = append(slice_result, slice[0])
             }
             TAG_NAME = ""
         }
