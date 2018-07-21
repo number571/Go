@@ -67,15 +67,15 @@ func main () {
 }
 
 func check_args (mode string, args []string) {
-    if mode == modeG[0] || mode == modeG[1] {
+    if mode == modeG[0] {
         if len(args) != 4 {
             get_error("mode = g, args != 4")
         }
-    } else if mode == modeR[0] || mode == modeR[1] {
+    } else if mode == modeR[0] {
         if len(args) != 5 {
             get_error("mode = r, args != 5")
         }
-    } else if mode == modeL[0] || mode == modeL[1] {
+    } else if mode == modeL[0] {
         if len(args) != 3 {
             get_error("mode = l, args != 3")
         }
