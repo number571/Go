@@ -31,7 +31,7 @@ func main () {
     strings.ToUpper(os.Args[1]) == modeG[0] ||
     strings.ToUpper(os.Args[1]) == modeG[1] {
 
-        check_args("G", os.Args)
+        check_args("-G", os.Args)
 
         max, err := strconv.Atoi(os.Args[3])
         check_error(err)
@@ -42,7 +42,7 @@ func main () {
     strings.ToUpper(os.Args[1]) == modeR[0] ||
     strings.ToUpper(os.Args[1]) == modeR[1] {
 
-        check_args("R", os.Args)
+        check_args("-R", os.Args)
 
         pos, err := strconv.Atoi(os.Args[3])
         check_error(err)
@@ -56,7 +56,7 @@ func main () {
     strings.ToUpper(os.Args[1]) == modeL[0] ||
     strings.ToUpper(os.Args[1]) == modeL[1] {
 
-        check_args("L", os.Args)
+        check_args("-L", os.Args)
         fmt.Println("Length of file:", get_length(os.Args[2]))
 
     } else {
@@ -69,7 +69,7 @@ func main () {
 func check_args (mode string, args []string) {
     if mode == modeG[0] || mode == modeG[1] {
         if len(args) != 4 {
-            get_error("mode = c, args != 4")
+            get_error("mode = g, args != 4")
         }
     } else if mode == modeR[0] || mode == modeR[1] {
         if len(args) != 5 {
