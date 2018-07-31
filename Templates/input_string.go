@@ -13,7 +13,6 @@ func main() {
 }
 
 func input_string (text string) string {
-
     var (
         reader *bufio.Reader
         command string
