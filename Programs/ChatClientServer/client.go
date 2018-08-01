@@ -3,6 +3,7 @@ package main
 import (
     "strings"
     "bufio"
+    "time"
     "net"
     "fmt"
     "os"
@@ -25,10 +26,23 @@ func main () {
     check_error(err)
     defer conn.Close()
 
+    try_connection(conn)
     username = input_string("Nickname: ")
     
     send_request(conn)
     get_response(conn)
+}
+
+func try_connection (conn net.Conn) {
+    var check []byte = make([]byte, 1)
+    timer := time.NewTimer(time.Second)
+    go func() {
+        <- timer.C
+        fmt.Println("Connection failure")
+        os.Exit(1)
+    }()
+    conn.Read(check); timer.Stop()
+    fmt.Println("Connection success")
 }
 
 func send_request (conn net.Conn) {
