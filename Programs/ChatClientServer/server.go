@@ -11,7 +11,7 @@ const (
     PROTOCOL = "tcp"
     PORT = ":8080"
     BUFF = 1024
-    QUAN = 1
+    QUAN = 5
 )
 
 var (
