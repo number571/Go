@@ -11,7 +11,7 @@ const (
     PROTOCOL = "tcp"
     PORT = ":8080"
     BUFF = 1024
-    QUAN = 5
+    QUAN = 1
 )
 
 var (
@@ -31,11 +31,16 @@ func main () {
         if user < QUAN {
             connect[user], err = listen.Accept()
             if err != nil { break }
+            try_connection(connect[user])
             go connection(connect[user])
         }
     }
 
     fmt.Scanln()
+}
+
+func try_connection (conn net.Conn) {
+    conn.Write([]byte("1"))
 }
 
 func connection (conn net.Conn) {
