@@ -18,7 +18,7 @@ const (
 
 var (
     buffer []byte = make([]byte, BUFF)
-    username string = "default"
+    username string
 )
 
 func main () {
