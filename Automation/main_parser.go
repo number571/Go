@@ -56,38 +56,34 @@ func check_args (args []string) {
         flag_atr bool = false
     )
 
-    if len(args) == 1 {
-        get_error("no url specified")
+    switch len(args) {
+        case 1: 
+            get_error("no url specified")
+        case 2:
+            if args[1] == "-i" || args[1] == "--info" {
+                get_info()
+            } else { return }
+        default:
+            for _, value := range args[2:] {
 
-    } else if len(args) == 2 {
-        if args[1] == "-i" || args[1] == "--info" {
-            get_info()
-        } else { return }
+                switch value {
+                    case "-tp", "--tor-proxy":  GET_TORS_PROXY = true; continue
+                    case "-ua", "--user-agent": GET_USER_AGENT = true; continue
+                    case "-t", "--tag":  flag_tag = true; continue
+                    case "-a", "--attr": flag_atr = true; continue
+                }
 
-    } else if len(args) > 2 {
-        for _, value := range args[2:] {
-            if value == "-tp" || value == "--tor-proxy" {
-                GET_TORS_PROXY = true
+                if flag_tag {
+                    TAG_NAME = value
+                    flag_tag = false
 
-            } else if value == "-ua" || value == "--user-agent" {
-                GET_USER_AGENT = true
-
-            } else if value == "-t" || value == "--tag" {
-                flag_tag = true  
-
-            } else if value == "-a" || value == "--attr" {
-                flag_atr = true
-
-            } else if flag_tag {
-                TAG_NAME = value
-                flag_tag = false
-
-            } else if flag_atr {
-                ATR_NAME = value
-                flag_atr = false
+                } else if flag_atr {
+                    ATR_NAME = value
+                    flag_atr = false
+                }
             }
-        }
     }
+
 }
 
 func get_info() {
