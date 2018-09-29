@@ -1,15 +1,15 @@
 package main
 
 import (
-	"strings"
+    "strings"
     "os/exec"
     "fmt"
 )
 
 func main() {
-	result, err := system("ls -l")
-	check_error(err)
-	fmt.Println(string(result))
+    result, err := system("ls -l")
+    check_error(err)
+    fmt.Println(string(result))
 }
 
 func system (line_command string) ([]byte, error) {
@@ -18,7 +18,7 @@ func system (line_command string) ([]byte, error) {
 }
 
 func check_error (err error) {
-	if err != nil {
-		fmt.Println(err)
-	}
+    if err != nil {
+        fmt.Println(err)
+    }
 }
