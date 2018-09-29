@@ -4,6 +4,7 @@ import (
     "strings"
     "os/exec"
     "fmt"
+    "os"
 )
 
 func main() {
@@ -20,5 +21,6 @@ func system (line_command string) ([]byte, error) {
 func check_error (err error) {
     if err != nil {
         fmt.Println(err)
+        os.Exit(1)
     }
 }
