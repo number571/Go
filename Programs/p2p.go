@@ -1,6 +1,17 @@
 package main 
 
+/*
+    ./main -p 8080 -n user
+        |:connect -> 127.0.0.1:9090
+        |hello, world
+        |:network
+        |:file -> main.go
+        |:disconnect
+        |:exit
+*/
+
 import (
+    "os/exec"
     "strings"
     "bufio"
     "net"
@@ -9,22 +20,28 @@ import (
 )
 
 const (
-    CMD_EXIT = ":exit"
-    CMD_CONNECT = ":connect"
-    CMD_DISCONNECT = ":disconnect"
+    CMD_LINE        = "->"
+    CMD_EXIT        = ":exit"
+    CMD_FILE        = ":file"
+    CMD_NETWORK     = ":network"
+    CMD_CONNECT     = ":connect"
+    CMD_DISCONNECT  = ":disconnect"
+
+    CHECK_FILE      = "[:~:-file-:~:]"
+    CHECK_NAME      = "[:~:-name-:~:]"
 
     PROTOCOL_TCP = "tcp"
     PROTOCOL_UDP = "udp"
 
-    DNS = "8.8.8.8:8080"
-    BUFF = 1024
+    DNS  = "8.8.8.8:8080"
+    BUFF = 512
 )
 
 var (
     __main_port string = ""
-    __nickname  string = "default"
+    __nickname  string = "..."
 
-    __local_ip string
+    __local_ip string = get_local_ip()
     __to_ip_port []string
 
     __connected bool = false
@@ -59,7 +76,11 @@ func check_args (args []string) {
 }
 
 func state_server () {
-    var buffer []byte = make([]byte, BUFF)
+    var (
+        buffer  []byte = make([]byte, BUFF)
+        splited []string
+        content string = ""
+    )
 
     go to_client()
 
@@ -76,8 +97,20 @@ func state_server () {
         for {
             length, err := conn.Read(buffer)
             if err != nil || length == 0 { break }
-            fmt.Print(string(buffer[:length]))
+            content += string(buffer[:length])
         }
+
+        if strings.HasPrefix(content, CHECK_FILE) {
+            splited = strings.Split(strings.Replace(content, CHECK_FILE, "", 1), CHECK_NAME)
+            if len(splited) == 2 {
+                input_to_file(splited[0], splited[1])
+                fmt.Printf("[File '%s' saved]\n", splited[0])
+            }
+        } else {
+            fmt.Print(content)
+        }
+
+        content = ""
 
         conn.Close()
         listen.Close()
@@ -85,49 +118,91 @@ func state_server () {
 }
 
 func to_client () {
-    fmt.Println(get_local_ip())
-    channel := make(chan bool)
+    fmt.Println("Your local IP adress: " + __local_ip)
     for {
-        go state_client(channel)
-        <- channel
+        state_client()
     }
 }
 
-func state_client (channel chan bool) {
+func state_client () {
     var (
         message string
-        message_without_space string
-        splited_message []string 
+        splited []string 
     )
 
     message = input_string("")
-    message_without_space = strings.Replace(message, " ", "", -1)
-    splited_message = strings.Split(message_without_space, "->")
+    splited = strings.Split(strings.Replace(message, " ", "", -1), CMD_LINE)
 
-    switch splited_message[0] {
+    switch splited[0] {
 
     case CMD_EXIT:
         os.Exit(0)
 
+    case CMD_FILE:
+        if len(splited) == 2 {
+            var content string = get_file_content(splited[1])
+            if __connected {
+                for index, value := range __to_ip_port {
+                    conn, err := net.Dial(PROTOCOL_TCP, value)
+                    if err != nil {
+                        __to_ip_port = remove(__to_ip_port, index)
+                        __size_connection--
+                        if __size_connection == 0 {
+                            __connected = false
+                        }
+                    } else {
+                        conn.Write([]byte(CHECK_FILE + splited[1] + CHECK_NAME + content))
+                        conn.Close()
+                    }
+                }
+            }
+        }
+
+    case CMD_NETWORK:
+        fmt.Println("==================")
+        fmt.Println("Connection:", __connected)
+        for _, value := range __to_ip_port {
+            fmt.Println(value)
+        }
+        fmt.Println("==================")
+
     case CMD_CONNECT:
-        if len(splited_message) == 2 {
-            __to_ip_port = append(__to_ip_port, splited_message[1])
-            __size_connection++
-            __connected = true
+        if len(splited) == 2 {
+
+            var flag bool = false
+
+            for _, value := range __to_ip_port {
+                if value == splited[1] {
+                    flag = true
+                    break
+                }
+            }
+
+            if !flag {
+                conn, err := net.Dial(PROTOCOL_TCP, splited[1])
+                if err == nil {
+                    __to_ip_port = append(__to_ip_port, splited[1])
+                    __size_connection++
+                    __connected = true
+
+                    conn.Write([]byte(fmt.Sprintf("[User '%s:%s/%s' join]\n", __local_ip, __main_port, __nickname)))
+                    conn.Close()
+                }
+            }
         }
 
     case CMD_DISCONNECT:
-        if len(splited_message) == 1 {
-            for i := uint16(0); i < __size_connection; i++ {
+        if len(splited) == 1 {
+            for __size_connection != 0 {
                 __to_ip_port = remove(__to_ip_port, 0)
+                __size_connection--
             }
-            __size_connection = 0
             __connected = false
 
         } else {
-            for i := uint16(0); i < __size_connection; i++ {
-                if splited_message[1] == __to_ip_port[i] {
-                    __to_ip_port = remove(__to_ip_port, i)
+            for index, value := range __to_ip_port {
+                if splited[1] == value {
+                    __to_ip_port = remove(__to_ip_port, index)
                     __size_connection--
                     break
                 }
@@ -140,47 +215,77 @@ func state_client (channel chan bool) {
 
     default:
         if  __connected  {
-            for i := uint16(0); i < __size_connection; i++ {
-                conn, err := net.Dial(PROTOCOL_TCP, __to_ip_port[i])
+            for index, value := range __to_ip_port {
+                conn, err := net.Dial(PROTOCOL_TCP, value)
                 if err != nil {
-                    __to_ip_port = remove(__to_ip_port, i)
+                    __to_ip_port = remove(__to_ip_port, index)
                     __size_connection--
                     if __size_connection == 0 {
                         __connected = false
                     }
                 } else {
-                    conn.Write([]byte(fmt.Sprintf("[%s/%s]: %s\n", __local_ip, __nickname, message)))
+                    conn.Write([]byte(fmt.Sprintf("[%s:%s/%s]: %s\n", __local_ip, __main_port, __nickname, message)))
                     conn.Close()
                 }
             }
         }
     }
+}
 
-    channel <- true
+func system (line_command string) ([]byte, error) {
+    var command []string = strings.Split(line_command, " ")
+    return exec.Command(command[0], command[1:]...).Output()
+}
+
+func get_file_content (filename string) string {
+    file, err := os.Open(filename)
+    check_error(err)
+    defer file.Close()
+
+    var buffer []byte = make([]byte, 512)
+    var message string = ""
+    
+    for {
+        length, err := file.Read(buffer)
+        if err != nil || length == 0 { break }
+        message += string(buffer[:length])
+    }
+
+    return message
 }
 
 func get_local_ip () string {
     conn, err := net.Dial(PROTOCOL_UDP, DNS)
     check_error(err)
 
-    __local_ip = strings.Split(conn.LocalAddr().String(), ":")[0]
+    var ip string = strings.Split(conn.LocalAddr().String(), ":")[0]
     conn.Close()
     
-    return "Your local IP adress: " + __local_ip
+    return ip
+}
+
+func input_to_file (name, content string) error {
+    file, err := os.Create(name)
+
+    if err != nil {
+        return err
+    }
+
+    file.Write([]byte(content))
+    file.Close()
+
+    return nil
 }
 
 func input_string (text string) string {
-    var (
-        reader *bufio.Reader
-        command string
-    )
+    var command string
     fmt.Print(text)
-    reader = bufio.NewReader(os.Stdin)
-    command, _ = reader.ReadString('\n')
+    
+    command, _ = bufio.NewReader(os.Stdin).ReadString('\n')
     return strings.Replace(command, "\n", "", -1)
 }
 
-func remove(list []string, num uint16) []string {
+func remove(list []string, num int) []string {
     return append(list[:num], list[num+1:]...)
 }
 
