@@ -242,7 +242,7 @@ func get_file_content (filename string) string {
     check_error(err)
     defer file.Close()
 
-    var buffer []byte = make([]byte, 512)
+    var buffer []byte = make([]byte, BUFF)
     var message string = ""
     
     for {
