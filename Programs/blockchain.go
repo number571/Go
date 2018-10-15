@@ -1,4 +1,12 @@
-package main 
+package main
+
+/*
+    [WRITE_BLOCK]
+        ./main -w from to summ
+    
+    [READ_BLOCKS]
+        ./main -r
+*/
 
 import (
     "crypto/sha256"
