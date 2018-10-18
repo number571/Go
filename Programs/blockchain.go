@@ -33,34 +33,34 @@ type Block struct {
 }
 
 func main () {
-    check_args(os.Args)
+    checkArgs(os.Args)
     os.Mkdir(BLOCKCHAIN_DIR, 0777)
 
     switch (os.Args[1]) {
         case "-r", "--read":
-            read_blocks(get_last_block(BLOCKCHAIN_DIR))
+            readBlocks(getLastBlock(BLOCKCHAIN_DIR))
         case "-w", "--write":
-            write_block(get_last_block(BLOCKCHAIN_DIR), os.Args[2:])
+            writeBlock(getLastBlock(BLOCKCHAIN_DIR), os.Args[2:])
     }
 }
 
-func check_args (args []string) {
+func checkArgs (args []string) {
     if len(args) < 2 {
-        get_error("len(args) < 2")
+        getError("len(args) < 2")
     }
     switch (args[1]) {
         case "-r", "--read":
             return
         case "-w", "--write":
             if len(args[1:]) != 4 {
-                get_error("len(args) for mode '-w' != 3")
+                getError("len(args) for mode '-w' != 3")
             }
         default:
-            get_error("argument is not r/w")    
+            getError("argument is not r/w")    
     }
 }
 
-func read_blocks (last_block int) {
+func readBlocks (last_block int) {
     var (
         lines_of_content []string
         list_of_hashes []string
@@ -71,11 +71,11 @@ func read_blocks (last_block int) {
         fmt.Println("Checked from blocks:")
         
         for i := 2; i <= last_block; i++ {
-            json.Unmarshal([]byte(get_file_content(get_filename(i))), &data_json)
+            json.Unmarshal([]byte(getFileContent(getFilename(i))), &data_json)
 
             list_of_hashes = append(
                 list_of_hashes,
-                get_hash(get_file_content(get_filename(i - 1))),
+                getHash(getFileContent(getFilename(i - 1))),
             )
 
             if (data_json.Hash == list_of_hashes[i - 2]) {
@@ -89,10 +89,10 @@ func read_blocks (last_block int) {
 
     list_of_hashes = append(
         list_of_hashes,
-        get_hash(get_file_content(get_filename(last_block))),
+        getHash(getFileContent(getFilename(last_block))),
     )
 
-    lines_of_content = strings.Split(get_file_content(get_filename(0)), "\n")
+    lines_of_content = strings.Split(getFileContent(getFilename(0)), "\n")
 
     fmt.Println("\nChecked from zero-block:")
 
@@ -105,66 +105,66 @@ func read_blocks (last_block int) {
     }
 }
 
-func write_block (last_block int, args []string) {
+func writeBlock (last_block int, args []string) {
     var (
-        new_block string = get_filename(last_block + 1)
+        new_block string = getFilename(last_block + 1)
         hash string = ""
     )
 
     file, err := os.Create(new_block)
-    check_error(err)
+    checkError(err)
     defer file.Close()
 
     if last_block > 0 {
-        hash = get_hash(get_file_content(get_filename(last_block)))
+        hash = getHash(getFileContent(getFilename(last_block)))
     }
 
     x, _ := json.Marshal(Block{args[0], args[1], args[2], hash});
     file.WriteString(string(x))
 
-    zero_block(get_hash(get_file_content(new_block)))
+    zeroBlock(getHash(getFileContent(new_block)))
 }
 
-func zero_block (hash string) {
-    var zero_block_name string = get_filename(0)
+func zeroBlock (hash string) {
+    var zero string = getFilename(0)
 
-    if file_is_not_exist(zero_block_name) {
-        create_file(zero_block_name)
+    if fileIsNotExist(zero) {
+        createFile(zero)
     }
 
-    file, err := os.OpenFile(zero_block_name, os.O_WRONLY|os.O_APPEND, 0777)
-    check_error(err)
+    file, err := os.OpenFile(zero, os.O_WRONLY|os.O_APPEND, 0777)
+    checkError(err)
     defer file.Close()
 
     file.WriteString(hash + "\n")
 }
 
-func file_is_not_exist (filename string) bool {
+func fileIsNotExist (filename string) bool {
     if _, err := os.Stat(filename); os.IsNotExist(err) {
         return true
     }
     return false
 }
 
-func create_file (filename string) {
+func createFile (filename string) {
     file, err := os.Create(filename)
-    check_error(err)
+    checkError(err)
     file.Close()
 }
 
-func get_hash (message string) string {
+func getHash (message string) string {
     hash := sha256.New() 
     hash.Write([]byte(message))
     return hex.EncodeToString(hash.Sum(nil))
 }
 
-func get_filename (base int) string {
+func getFilename (base int) string {
     return BLOCKCHAIN_DIR + strconv.Itoa(base) + EXTENSION
 }
 
-func get_file_content (filename string) string {
+func getFileContent (filename string) string {
     file, err := os.Open(filename)
-    check_error(err)
+    checkError(err)
     defer file.Close()
 
     var buffer []byte = make([]byte, BUFF)
@@ -179,13 +179,13 @@ func get_file_content (filename string) string {
     return message
 }
 
-func get_last_block (dir string) int {
+func getLastBlock (dir string) int {
     files, err := ioutil.ReadDir(dir)
-    check_error(err)
+    checkError(err)
 
     var max int = 0
     for _, file := range files {
-        max_block, _ := strconv.Atoi(get_filebase(file.Name()))
+        max_block, _ := strconv.Atoi(getFilebase(file.Name()))
         if max_block > max {
             max = max_block
         }   
@@ -193,17 +193,17 @@ func get_last_block (dir string) int {
     return max
 }
 
-func get_filebase (file string) string {
+func getFilebase (file string) string {
     return strings.Split(file, ".")[0]
 }
 
-func check_error (err error) {
+func checkError (err error) {
     if err != nil {
-        get_error(err.Error())
+        getError(err.Error())
     }
 }
 
-func get_error (err string) {
+func getError (err string) {
     fmt.Println("Error:", err)
     os.Exit(1)
 }
