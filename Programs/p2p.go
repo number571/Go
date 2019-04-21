@@ -1,301 +1,153 @@
 package main 
 
-/*
-    ./main -p 8080 -n user
-        |:connect -> 127.0.0.1:9090
-        |hello, world
-        |:network
-        |:file -> main.go
-        |:disconnect
-        |:exit
-*/
-
 import (
-    "os/exec"
-    "strings"
-    "bufio"
-    "net"
-    "fmt"
     "os"
+    "fmt"
+    "net"
+    "bufio"
+    "strings"
+    "encoding/json"
 )
 
 const (
-    CMD_LINE        = "->"
-    CMD_EXIT        = ":exit"
-    CMD_FILE        = ":file"
-    CMD_NETWORK     = ":network"
-    CMD_CONNECT     = ":connect"
-    CMD_DISCONNECT  = ":disconnect"
-
-    CHECK_FILE      = "[:~:-file-:~:]"
-    CHECK_NAME      = "[:~:-name-:~:]"
-
-    PROTOCOL_TCP = "tcp"
-    PROTOCOL_UDP = "udp"
-
-    DNS  = "8.8.8.8:8080"
-    BUFF = 512
+    PROTOCOL = "tcp"
+    BUFF = 256
 )
+
+type packageTCP struct {
+    From string
+    Body string
+}
 
 var (
-    __main_port string = ""
-    __nickname  string = "..."
-
-    __local_ip string = get_local_ip()
-    __to_ip_port []string
-
-    __connected bool = false
-    __size_connection uint16 = 0
+    connections = make(map[string]bool)
+    address string
 )
 
-func main () {
-    check_args(os.Args)
-    state_server()
+func main() {
+    initArgs(os.Args)
+    go client()
+    server()
 }
 
-func check_args (args []string) {
-    var (
-        nick bool = false
-        port bool = false
-    )
-
-    for _, value := range args[1:] {
-
-        if port { __main_port = value; port = false; continue }
-        if nick { __nickname  = value; nick = false; continue }
-
+func initArgs(args []string) {
+    var flag_address bool
+    for _, value := range args {
         switch value {
-            case "-p", "--port":
-                port = true
-            case "-n", "--nickname":
-                nick = true
+            case "-a", "--address": 
+                flag_address = true
+                continue
+        }
+        switch {
+            case flag_address: 
+                address = value
+                flag_address = false
         }
     }
-
-    if __main_port == "" { get_error("port not specified") }
+    if address == "" { 
+        printError("address undefined")
+    }
 }
 
-func state_server () {
-    var (
-        buffer  []byte = make([]byte, BUFF)
-        splited []string
-        content string = ""
-    )
-
-    go to_client()
-
+func client() {
     for {
-        listen, err := net.Listen(PROTOCOL_TCP, ":" + __main_port)
-        check_error(err)
+        var message = inputString()
+        var splited = strings.Split(message, " ")
+        switch splited[0] {
+            case ":exit": os.Exit(0)
+            case ":network": network()
+            case ":connect":
+                if len(splited) > 1 {
+                    connectTo(splited[1:])
+                }
+            case ":disconnect":
+                if len(splited) > 1 {
+                    disconnectFrom(splited[1:])
+                }
+            default: 
+                for addr := range connections {
+                    sendPacket(addr, message)
+                }
+        }
+    }
+}
 
+func server() {
+    listen, err := net.Listen(PROTOCOL, address)
+    if err != nil {
+        printError("can't run listener")
+    }
+    defer listen.Close()
+    fmt.Println("[ClientP2P is run]")
+    for {
         conn, err := listen.Accept()
-        if err != nil { 
-            listen.Close()
-            continue 
+        if err != nil {
+            break
         }
-
-        for {
-            length, err := conn.Read(buffer)
-            if err != nil || length == 0 { break }
-            content += string(buffer[:length])
-        }
-
-        if strings.HasPrefix(content, CHECK_FILE) {
-            splited = strings.Split(strings.Replace(content, CHECK_FILE, "", 1), CHECK_NAME)
-            if len(splited) == 2 {
-                input_to_file(splited[0], splited[1])
-                fmt.Printf("[File '%s' saved]\n", splited[0])
-            }
-        } else {
-            fmt.Print(content)
-        }
-
-        content = ""
-
-        conn.Close()
-        listen.Close()
+        go handleConnect(conn)
     }
 }
 
-func to_client () {
-    fmt.Println("Your local IP adress: " + __local_ip)
-    for {
-        state_client()
-    }
-}
-
-func state_client () {
+func handleConnect(conn net.Conn) {
+    defer conn.Close()
     var (
+        buffer = make([]byte, BUFF)
         message string
-        splited []string 
+        pack packageTCP
     )
-
-    message = input_string("")
-    splited = strings.Split(strings.Replace(message, " ", "", -1), CMD_LINE)
-
-    switch splited[0] {
-
-    case CMD_EXIT:
-        os.Exit(0)
-
-    case CMD_FILE:
-        if len(splited) == 2 {
-            var content string = get_file_content(splited[1])
-            if __connected {
-                for index, value := range __to_ip_port {
-                    conn, err := net.Dial(PROTOCOL_TCP, value)
-                    if err != nil {
-                        __to_ip_port = remove(__to_ip_port, index)
-                        __size_connection--
-                        if __size_connection == 0 {
-                            __connected = false
-                        }
-                    } else {
-                        conn.Write([]byte(CHECK_FILE + splited[1] + CHECK_NAME + content))
-                        conn.Close()
-                    }
-                }
-            }
-        }
-
-    case CMD_NETWORK:
-        fmt.Println("==================")
-        fmt.Println("Connection:", __connected)
-        for _, value := range __to_ip_port {
-            fmt.Println(value)
-        }
-        fmt.Println("==================")
-
-    case CMD_CONNECT:
-        if len(splited) == 2 {
-
-            var flag bool = false
-
-            for _, value := range __to_ip_port {
-                if value == splited[1] {
-                    flag = true
-                    break
-                }
-            }
-
-            if !flag {
-                conn, err := net.Dial(PROTOCOL_TCP, splited[1])
-                if err == nil {
-                    __to_ip_port = append(__to_ip_port, splited[1])
-                    __size_connection++
-                    __connected = true
-
-                    conn.Write([]byte(fmt.Sprintf("[User '%s:%s/%s' join]\n", __local_ip, __main_port, __nickname)))
-                    conn.Close()
-                }
-            }
-        }
-
-    case CMD_DISCONNECT:
-        if len(splited) == 1 {
-            for __size_connection != 0 {
-                __to_ip_port = remove(__to_ip_port, 0)
-                __size_connection--
-            }
-            __connected = false
-
-        } else {
-            for index, value := range __to_ip_port {
-                if splited[1] == value {
-                    __to_ip_port = remove(__to_ip_port, index)
-                    __size_connection--
-                    break
-                }
-            }
-
-            if __size_connection == 0 {
-                __connected = false
-            }
-        }
-
-    default:
-        if  __connected  {
-            for index, value := range __to_ip_port {
-                conn, err := net.Dial(PROTOCOL_TCP, value)
-                if err != nil {
-                    __to_ip_port = remove(__to_ip_port, index)
-                    __size_connection--
-                    if __size_connection == 0 {
-                        __connected = false
-                    }
-                } else {
-                    conn.Write([]byte(fmt.Sprintf("[%s:%s/%s]: %s\n", __local_ip, __main_port, __nickname, message)))
-                    conn.Close()
-                }
-            }
-        }
-    }
-}
-
-func system (line_command string) ([]byte, error) {
-    var command []string = strings.Split(line_command, " ")
-    return exec.Command(command[0], command[1:]...).Output()
-}
-
-func get_file_content (filename string) string {
-    file, err := os.Open(filename)
-    check_error(err)
-    defer file.Close()
-
-    var buffer []byte = make([]byte, BUFF)
-    var message string = ""
-    
     for {
-        length, err := file.Read(buffer)
-        if err != nil || length == 0 { break }
+        length, err := conn.Read(buffer)
+        if err != nil { break }
         message += string(buffer[:length])
     }
-
-    return message
+    json.Unmarshal([]byte(message), &pack)
+    connectTo([]string{pack.From})
+    fmt.Printf("[%s]: %s\n", pack.From, pack.Body)
 }
 
-func get_local_ip () string {
-    conn, err := net.Dial(PROTOCOL_UDP, DNS)
-    check_error(err)
+func sendPacket(to, message string) {
+    conn, err := net.Dial(PROTOCOL, to)
+    if err != nil {
+        disconnectFrom([]string{to})
+        return
+    }
+    var pack = packageTCP {
+        From: address,
+        Body: message,
+    }
 
-    var ip string = strings.Split(conn.LocalAddr().String(), ":")[0]
+    data, err := json.Marshal(pack)
+    if err != nil {
+        printError("can't convert pack to json")
+    }
+
+    conn.Write(data)
     conn.Close()
-    
-    return ip
 }
 
-func input_to_file (name, content string) error {
-    file, err := os.Create(name)
-
-    if err != nil {
-        return err
-    }
-
-    file.Write([]byte(content))
-    file.Close()
-
-    return nil
-}
-
-func input_string (text string) string {
-    var command string
-    fmt.Print(text)
-    
-    command, _ = bufio.NewReader(os.Stdin).ReadString('\n')
-    return strings.Replace(command, "\n", "", -1)
-}
-
-func remove(list []string, num int) []string {
-    return append(list[:num], list[num+1:]...)
-}
-
-func check_error (err error) {
-    if err != nil {
-        get_error(err.Error())
+func network() {
+    for addr := range connections {
+        fmt.Println("|", addr)
     }
 }
 
-func get_error (err string) {
-    fmt.Println("Error:", err)
-    os.Exit(1)
+func connectTo(conn []string) {
+    for _, value := range conn {
+        connections[value] = true
+    }
+}
+
+func disconnectFrom(conn []string) {
+    for _, value := range conn {
+        delete(connections, value)
+    }
+}
+
+func inputString() string {
+    message, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+    return strings.Replace(message, "\n", "", -1)
+}
+
+func printError(err string) {
+    fmt.Println("[Error]:", err)
 }
