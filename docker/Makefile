@@ -5,5 +5,5 @@ build:
 run: 
 	docker run -it --rm -v $$(pwd)/mounted:/mounted -p 8080:80 simple_service
 clean:
-	docker rm $$(docker ps -a -q)
-	docker rmi -f $$(docker images -aq)
+	docker rm -f $$(docker ps -a -q) | true
+	docker rmi -f $$(docker images -aq) | true 
