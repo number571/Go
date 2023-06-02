@@ -1,0 +1,31 @@
+[install] docker docker-compose
+sudo systemctl start docker 
+
+sudo groupadd docker
+sudo usermod -aG docker $USER
+newgrp docker
+reboot
+
+docker pull ubuntu:18.10
+docker images
+docker run ubuntu:18.10 echo 'hello from ubuntu'
+docker ps -a 
+docker run -it --rm ubuntu:18.10 /bin/bash
+
+docker run -it ubuntu:18.10 /bin/bash
+> exit
+docker start [CONTAINER_ID]
+docker exec -it [CONTAINER_ID] /bin/bash
+docker stop [CONTAINER_ID]
+docker rm [CONTAINER_ID]
+docker rm $(docker ps -a -q)
+
+docker images -a
+docker rmi [IMAGE_ID]
+docker rmi -f $(docker images -aq)
+docker rmi $(docker images -f "dangling=true" -q) --force
+
+docker build . --tag simple_service
+docker run -it --rm simple_service
+
+docker run -it --rm -p 8080:80 simple_service
