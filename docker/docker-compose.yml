@@ -1,0 +1,10 @@
+version: '3'
+services:
+  simple_service:
+    build:
+      context: .
+      dockerfile: dockerfiles/simple_service.dockerfile
+    ports:
+      - 8080:80
+    volumes:
+      - ./mounted:/mounted

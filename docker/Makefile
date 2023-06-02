@@ -1,9 +1,9 @@
 .PHONY: default build run 
 default: build run 
 build:
-	docker build . --tag simple_service
+	docker-compose build
 run: 
-	docker run -it --rm -v $$(pwd)/mounted:/mounted -p 8080:80 simple_service
+	docker-compose up
 clean:
-	docker rm -f $$(docker ps -a -q) | true
-	docker rmi -f $$(docker images -aq) | true 
+	docker-compose down 
+	docker-compose rm -f
